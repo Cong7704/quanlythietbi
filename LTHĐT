@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Lighting System</title>
+</head>
+<body>
+  <h1>Smart Lighting System</h1>
+
+  <button onclick="connectWallet()">🔌 Kết nối ví</button><br><br>
+
+  <div>
+    <input type="text" id="deviceId" placeholder="Nhập Device ID">
+    <button onclick="registerDevice()">📝 Đăng ký thiết bị</button>
+  </div><br>
+
+  <div>
+    <button onclick="turnOn()">💡 Bật thiết bị</button>
+    <button onclick="turnOff()">💤 Tắt thiết bị</button>
+  </div><br>
+
+  <div>
+    <button onclick="getStatus()">📊 Lấy trạng thái</button>
+    <pre id="statusOutput"></pre>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script>
+    let web3;
+    let contract;
+    const contractAddress = "0xDA0bab807633f07f013f94DD0E6A4F96F8742B53";
+    const abi = [
+      {
+        "inputs": [{"internalType":"string","name":"_deviceId","type":"string"}],
+        "name":"registerDevice","outputs":[],"stateMutability":"nonpayable","type":"function"
+      },
+      {
+        "inputs":[],"name":"turnOnDevice","outputs":[],"stateMutability":"nonpayable","type":"function"
+      },
+      {
+        "inputs":[],"name":"turnOffDevice","outputs":[],"stateMutability":"nonpayable","type":"function"
+      },
+      {
+        "inputs":[],"name":"getDeviceStatus",
+        "outputs":[
+          {"internalType":"string","name":"deviceId","type":"string"},
+          {"internalType":"bool","name":"isOn","type":"bool"},
+          {"internalType":"uint256","name":"usageHours","type":"uint256"},
+          {"internalType":"bool","name":"maintenanceNeeded","type":"bool"}
+        ],
+        "stateMutability":"view","type":"function"
+      }
+    ];
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        web3 = new Web3(window.ethereum);
+        contract = new web3.eth.Contract(abi, contractAddress);
+        alert("🔐 Ví đã kết nối!");
+      } else {
+        alert("⚠️ Bạn cần MetaMask!");
+      }
+    }
+
+    async function registerDevice() {
+      const deviceId = document.getElementById("deviceId").value;
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.registerDevice(deviceId).send({ from: accounts[0] });
+      alert("✅ Đăng ký thành công!");
+    }
+
+    async function turnOn() {
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.turnOnDevice().send({ from: accounts[0] });
+      alert("💡 Thiết bị đã bật!");
+    }
+
+    async function turnOff() {
+      const accounts = await web3.eth.getAccounts();
+      await contract.methods.turnOffDevice().send({ from: accounts[0] });
+      alert("💤 Thiết bị đã tắt!");
+    }
+
+    async function getStatus() {
+      const accounts = await web3.eth.getAccounts();
+      const result = await contract.methods.getDeviceStatus().call({ from: accounts[0] });
+
+      const display = `
+🆔 Device ID: ${result.deviceId}
+💡 Trạng thái: ${result.isOn ? "Bật" : "Tắt"}
+⏱️ Số giờ sử dụng: ${result.usageHours}
+🛠️ Cần bảo trì: ${result.maintenanceNeeded ? "Có" : "Không"}
+      `;
+      document.getElementById("statusOutput").innerText = display;
+    }
+  </script>
+</body>
+</html>
